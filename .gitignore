@@ -1,0 +1,6 @@
+.ipynb_checkpoints
+env/
+mlruns/
+rf-model/
+model/
+rf-model

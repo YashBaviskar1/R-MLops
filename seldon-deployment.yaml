@@ -1,0 +1,29 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: house-prediction-random-forest
+  namespace: seldon-system
+spec:
+  predictors:
+    - name: default
+      replicas: 1
+      graph:
+        name: model
+        implementation: MLflowModel
+        modelUri: "s3://mlflow-artifacts/1/d2cbc5aedb1b43d79da1f989b437028c/artifacts/rf_model"
+      componentSpecs:
+        - spec:
+            containers:
+              - name: model
+                image: seldonio/mlflowserver:2.9.0
+                env:
+                  - name: AWS_ACCESS_KEY_ID
+                    value: "root"
+                  - name: AWS_SECRET_ACCESS_KEY
+                    value: "12345678"
+                  - name: MLFLOW_S3_ENDPOINT_URL
+                    value: "http://192.168.0.197:9000"
+                  - name: AWS_REGION
+                    value: "us-east-1"
+      annotations:
+        predictor_version: "v1"

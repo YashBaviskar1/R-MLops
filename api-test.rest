@@ -1,0 +1,7 @@
+POST http://127.0.0.1:8000/send-message
+Content-Type: application/json
+
+{
+    "msg" : "hiiii"
+}
+
