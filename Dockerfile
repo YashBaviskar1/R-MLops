@@ -21,4 +21,4 @@ ENV MLFLOW_PYTHON_BIN=/usr/bin/python3
 ENV MLFLOW_BIN=/usr/local/bin/mlflow
 
 EXPOSE 8080
-CMD ["R", "-e", "pr <- plumber::plumb(file='plumber.R'); pr$run(host='0.0.0.0', port=8080)"]
+CMD ["R", "-e", "pr <- plumber::plumb(file='plumber.R'); pr$run(host='0.0.0.0', port=9000)"]

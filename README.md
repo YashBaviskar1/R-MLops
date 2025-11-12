@@ -163,3 +163,21 @@ if this works perfectly fine after testing, you can push it to your docker hub
 docker tag myrmodel:latest <your_dockerhub_username>/r-mlflow-model:latest
 docker push <your_dockerhub_username>/r-mlflow-model:latest
 ```
+
+
+
+
+### SeldonCore Setup 
+
+for deploying this model using seldon core, say using minikube 
+
+```bash
+kubectl create namespace seldon-system
+
+helm install seldon-core seldon-core-operator \
+    --repo https://storage.googleapis.com/seldon-charts \
+    --set usageMetrics.enabled=true \
+    --namespace seldon-system \
+    --set istio.enabled=true
+    # You can set ambassador instead with --set ambassador.enabled=true
+```

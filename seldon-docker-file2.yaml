@@ -1,0 +1,33 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: r-mlflow-model
+spec:
+  name: r-mlflow
+  predictors:
+  - name: default
+    replicas: 1
+    graph:
+      name: r-mlflow-model
+      implementation: CUSTOM
+      children: []
+    componentSpecs:
+    - spec:
+        containers:
+        - name: r-mlflow-model
+          image: <your-registry>/r-mlflow-seldon:latest
+          env:
+          - name: MODEL_URI
+            value: s3://mlflow-artifacts/models/r_model/1/artifacts/model/
+          - name: MINIO_ENDPOINT
+            value: http://minio.default.svc.cluster.local:9000
+          - name: MINIO_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: accesskey
+          - name: MINIO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: secretkey
