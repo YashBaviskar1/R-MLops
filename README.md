@@ -1,19 +1,46 @@
-# MLOPs pipeline setup in R 
 
-This is a complete end to end production grade deployement guidelines for **R Models** using **Mlflow tracking** and **MinIO s3 bucket** storage and **SeldonCore** for Deployement 
+---
+#  End-to-End MLOps Pipeline for R Models
 
+Deploying R models with **MLflow**, **MinIO (S3)**, and **Seldon Core** on Kubernetes
 
-# Prerequistes setups 
-- R envionement to run `Rscript`
-- Docker
-- Kuberanates setup (kubedm or minikube)
-- pip, python envionrment
+---
 
-## Configuration 
-Note : For a complete prod pipeline it is reccomanded to setup all this inside k8 enviornment inside the pod for easier config in future 
-## local setup for MinIO s3 bucket 
-PORT : 8001 
-- running using docker 
+##  Overview
+
+This guide walks through building a **production-ready pipeline** for training, tracking, storing, and deploying **R machine learning models** using:
+
+* **MLflow** for experiment tracking and model registry
+* **MinIO** for S3-compatible artifact storage
+* **Seldon Core** for scalable, Kubernetes-native model serving
+
+The workflow includes:
+
+1. Model training and logging with MLflow (in R)
+2. Artifact storage in MinIO
+3. Containerized R inference service
+4. Deployment to Kubernetes via Seldon Core
+
+---
+
+##  Prerequisites
+
+Make sure you have the following installed:
+
+* R environment (≥ 4.0)
+* Docker
+* Kubernetes (via **minikube** or **kubeadm**)
+* Python 3 + `pip` for MLflow
+* Basic shell and kubectl access
+
+---
+
+##  1. Set Up MinIO (S3 Bucket)
+
+**Port:** `8001` (S3 API) / `8002` (Console)
+
+Run MinIO locally with Docker:
+
 ```bash
 docker run -d \
   --name minio \
@@ -24,26 +51,29 @@ docker run -d \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
 
-This will start your MinIO bucket :
-- S3 API at : http://localhost:8001
-- Web Console at : http://localhost:8002
+Once started:
 
+* S3 API → [http://localhost:8001](http://localhost:8001)
+* Web Console → [http://localhost:8002](http://localhost:8002)
 
+In the web UI, create a bucket named, for example, **`mlflow-artifacts`**.
 
-You can go to the webUI and create a bucket where you want to store the models : 
-for example 
-`mlflow-artifacts`
+---
 
-## Local setup of MLflow 
-PORT : 5000
-create a python virtual envionrment and after activting it, install the requirements in the `requirements.txt` (or you can directly `pip install mlflow boto`)
+##  2. Set Up MLflow Server
+
+**Port:** `5000`
+
+### Create a virtual environment and install dependencies:
+
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install mlflow boto3
 ```
 
-Export the required credentials for Mlflow to access the MinIO s3 buckets.
+### Export MinIO credentials:
+
 ```bash
 export MLFLOW_S3_ENDPOINT_URL=http://localhost:8001
 export AWS_ACCESS_KEY_ID=admin
@@ -51,133 +81,239 @@ export AWS_SECRET_ACCESS_KEY=admin123
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
+### Start MLflow:
 
-
-Start the MLflow server with MinIO artifact store 
 ```bash
 mlflow server \
-    --backend-store-uri sqlite:///mlflow.db \
-    --default-artifact-root s3://mlflow-artifacts \
-    --host 0.0.0.0 \
-    --port 5000
+  --backend-store-uri sqlite:///mlflow.db \
+  --default-artifact-root s3://mlflow-artifacts \
+  --host 0.0.0.0 \
+  --port 5000
 ```
 
-the MLFLOW UI is visible at : 
+* MLflow UI → [http://localhost:5000](http://localhost:5000)
 
-`http://localhost:8001`
+---
 
-## Model Traning example in R 
+##  3. Train and Log an R Model
 
-If the setup is correct and its able to work perfectly then 
-you can do any model traning in R of your choice. 
-
-**note: One important note here is that Mlflow stores the models with pythonic flavours and in order to store/tag the models it is imp to use `crate` functionality for it, refer to the model_traning.R to see the example**
+Train a simple model and log it to MLflow:
 
 ```bash
-Rscript model_traning.R
+Rscript model_training.R
 ```
 
-after which you can visit the `http://localhost:8002` and using the RUN id from MLflow to see where the models is stored in the artifact.
+ **Important:**
+MLflow stores models in *Pythonic* format. To ensure compatibility, R models should be logged using the **`crate`** package. See `model_training.R` for a working example.
 
-note the URI that you got from there, it may look something like this
-```bash
+After the run completes, check the MLflow UI or MinIO console to locate your artifact path, e.g.:
+
+```
 s3://mlflow-artifacts/7/79be2b3c0fc443fdb23b06824d576a79/artifacts/model
 ```
 
+---
 
-## Model Loading from URI 
+##  4. Test Model Loading Locally
 
-There are various ways to test model loading configuration 
-you can use something like `preidct.R` 
-```R
-library(mlflow)
-mlflow_set_tracking_uri("http://172.26.95.101:5000")
-Sys.setenv(
-  AWS_ACCESS_KEY_ID = "admin",               
-  AWS_SECRET_ACCESS_KEY = "admin123",        
-  MLFLOW_S3_ENDPOINT_URL = "http://127.0.0.1:8001" 
-)
-model_URI = "s3://mlflow-artifacts/7/79be2b3c0fc443fdb23b06824d576a79/artifacts/model"
-model <- mlflow_load_model(model_URI)
-# print(model)
-print(model_URI)
+You can verify the artifact by running:
 
-input <- data.frame(
-        "Sepal.Length" = 5.1,
-        "Sepal.Width" = 3.5,
-        "Petal.Length" = 1.4,
-        "Petal.Width" = 0.2
-    )
-
-prediction <- mlflow_predict(model = model, data = input)
-print(prediction)
-```
-
-
-After configuaring your model URI you can :
 ```bash
 Rscript predict.R
 ```
 
+Or, containerized:
 
-if this works, it means your model have been loaded and working well.
-
-
-## Microservice Creation 
-
-SeldonCore does not by default support has any R Server implementation, it mostly has support for pythonic functions hence we need external microservice to load the model in general
-
-the example of microservice 
-`plumber.R`
-
-and to test if the microserice works or not you can create `server.R` which runs on a specific port 
-and then do 
-`Rscript server.R`
-
-you can verify if your endpoints are working properly or not, you can test out the API endpoints using curl or swagger docs as well
-
-
-## Containerisation of microservice
-
-If your microservice works fine its time to containerse it, the example is given in `Dockerfile` where you can see the this spefic line :
 ```bash
-RUN install2.r plumber mlflow jsonlite rpart reticulate R6
+docker run --rm \
+  -e AWS_ACCESS_KEY_ID=admin \
+  -e AWS_SECRET_ACCESS_KEY=admin123 \
+  -e MLFLOW_S3_ENDPOINT_URL=http://host.docker.internal:8001 \
+  -e MODEL_URI=s3://mlflow-artifacts/.../model \
+  <your_dockerhub_username>/r-mlflow-model:latest Rscript predict.R
 ```
 
-This is used instead of `R -e install.packages('plumber', 'mlflow')` etc, the problem is when you build the docker image the direct installation of packages does not cache it is instead better to use `install2.r` which will install forzen pre-built packages and the building process will be smoother next time essentially 
+If this prints valid predictions, your model artifacts and MinIO access are working correctly.
 
-after doing that you can 
-```bash 
+---
+
+##  5. Create an R Microservice with `plumber`
+
+Seldon Core doesn’t natively host R models; instead, you wrap them in a lightweight REST API using [`plumber`](https://www.rplumber.io/).
+
+Example `plumber.R`:
+
+```r
+library(plumber)
+library(mlflow)
+
+pr <- plumber$new()
+
+pr$handle("POST", "/predict", function(req, res){
+  model <- mlflow_load_model(Sys.getenv("MODEL_URI"))
+  data <- jsonlite::fromJSON(req$postBody)
+  pred <- mlflow_predict(model, data)
+  list(prediction = pred)
+})
+
+pr$run(host="0.0.0.0", port=8000)
+```
+
+---
+
+##  6. Containerize the R Microservice
+
+Create a `Dockerfile`:
+
+```dockerfile
+FROM rocker/r-ver:4.2.2
+
+RUN apt-get update && apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+# install2.r gives cached builds and faster Docker layers
+RUN install2.r plumber mlflow jsonlite rpart reticulate R6 crate aws.s3
+
+WORKDIR /app
+COPY . /app
+
+EXPOSE 8000
+CMD ["Rscript", "plumber.R"]
+```
+
+Build and run locally:
+
+```bash
 docker build -t iris-rmodel:latest .
+docker run -p 8000:8000 iris-rmodel:latest
 ```
 
-watch the logs 
+Then test:
 
 ```bash
-docker run iris-rmodel -p 8080:8000
+curl -X POST http://localhost:8000/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"Sepal.Length":5.1,"Sepal.Width":3.5,"Petal.Length":1.4,"Petal.Width":0.2}'
 ```
 
-if this works perfectly fine after testing, you can push it to your docker hub 
+---
+
+##  7. Push Image to Docker Hub
 
 ```bash
-docker tag myrmodel:latest <your_dockerhub_username>/r-mlflow-model:latest
+docker tag iris-rmodel:latest <your_dockerhub_username>/r-mlflow-model:latest
 docker push <your_dockerhub_username>/r-mlflow-model:latest
 ```
 
+---
 
+## 8. Deploy on Kubernetes with Seldon Core
 
-
-### SeldonCore Setup 
-
-for deploying this model using seldon core, say using minikube 
+Install Seldon Core:
 
 ```bash
 kubectl create namespace seldon-system
 
 helm install seldon-core seldon-core-operator \
-    --repo https://storage.googleapis.com/seldon-charts \
-    --set usageMetrics.enabled=true \
-    --namespace seldon-system \
-    --set istio.enabled=true
-    # You can set ambassador instead with --set ambassador.enabled=true
+  --repo https://storage.googleapis.com/seldon-charts \
+  --set usageMetrics.enabled=true \
+  --set istio.enabled=true \
+  --namespace seldon-system
 ```
+
+Check that it’s running:
+
+```bash
+kubectl get pods -n seldon-system
+```
+
+---
+
+##  9. Deploy the R Model with Seldon
+
+Example deployment manifest (`seldon-deployment.yaml`):
+
+```yaml
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: r-mlflow-model
+  namespace: seldon
+spec:
+  name: rmodel-deploy
+  predictors:
+  - name: default
+    replicas: 1
+    graph:
+      name: rmodel
+      type: MODEL
+      endpoint:
+        type: REST
+    componentSpecs:
+    - spec:
+        containers:
+        - name: rmodel
+          image: <your_dockerhub_username>/r-mlflow-model:latest
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8000
+          env:
+          - name: MLFLOW_TRACKING_URI
+            value: "http://mlflow:5000"
+          - name: MLFLOW_S3_ENDPOINT_URL
+            value: "http://minio:9000"
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: accesskey
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: minio-secret
+                key: secretkey
+          - name: MODEL_URI
+            value: "s3://mlflow-artifacts/.../model"
+```
+
+Apply it:
+
+```bash
+kubectl apply -f seldon-deployment.yaml
+kubectl get pods -n seldon
+```
+
+---
+
+##  10. Test the Deployed Endpoint
+
+Forward the service port:
+
+```bash
+kubectl get svc -n seldon
+kubectl port-forward -n seldon svc/r-mlflow-model-default 8000:8000
+```
+
+Then test with:
+
+```bash
+curl -X POST http://localhost:8000/api/v1.0/predictions \
+  -H 'Content-Type: application/json' \
+  -d '{"data": {"ndarray": [[5.1, 3.5, 1.4, 0.2]]}}'
+```
+
+Expected output:
+
+```json
+{"data":{"names":["prediction"],"ndarray":["setosa"]}}
+```
+
+---
+
+##  Notes & Recommendations
+
+* Use **`install2.r`** instead of `install.packages()` inside Docker for faster caching.
+* Add **readiness and liveness probes** to production manifests.
+* For secure setups, store credentials in **Kubernetes Secrets**.
+* For multi-model management, integrate with **MLflow registry** and **Seldon Model Gateway**.
+
+---

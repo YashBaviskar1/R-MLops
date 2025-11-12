@@ -32,3 +32,5 @@ spec:
             value: "admin123"
           - name: MODEL_URI
             value: "s3://mlflow-artifacts/7/79be2b3c0fc443fdb23b06824d576a79/artifacts/model"
+
+
