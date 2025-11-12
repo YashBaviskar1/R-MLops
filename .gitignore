@@ -1,0 +1,6 @@
+mlruns/
+NA/
+venv/
+.RData
+.env
+.Rhistory
