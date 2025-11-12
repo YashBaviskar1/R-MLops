@@ -4,3 +4,4 @@ mlruns/
 rf-model/
 model/
 rf-model
+.env

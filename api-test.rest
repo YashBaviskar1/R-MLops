@@ -5,3 +5,23 @@ Content-Type: application/json
     "msg" : "hiiii"
 }
 
+
+### Predict using MLflow model
+POST http://127.0.0.1:8000/predict
+Content-Type: application/json
+
+{
+  "crim": 1.0,
+  "zn": 99,
+  "indus": 1010.23,
+  "chas": 0,
+  "nox": 0.5,
+  "rm": 6.0,
+  "age": 65,
+  "dis": 4.0,
+  "rad": 4,
+  "tax": 997,
+  "ptratio": 18,
+  "black": 999,
+  "lstat": 12
+}

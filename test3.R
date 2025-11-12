@@ -1,13 +1,14 @@
 library(mlflow)
+mlflow_set_tracking_uri("http://172.26.95.101:5000")
 Sys.setenv(
-  AWS_ACCESS_KEY_ID = "root",               
-  AWS_SECRET_ACCESS_KEY = "12345678",        
-  MLFLOW_S3_ENDPOINT_URL = "http://127.0.0.1:9000" 
+  AWS_ACCESS_KEY_ID = "admin",               
+  AWS_SECRET_ACCESS_KEY = "admin123",        
+  MLFLOW_S3_ENDPOINT_URL = "http://127.0.0.1:8001" 
 )
-model_URI = "s3://mlflow-artifacts/1/d2cbc5aedb1b43d79da1f989b437028c/artifacts/rf_model"
+model_URI = "s3://mlflow-artifacts/7/442cc39313bf4c34b9ef7ee17379b74c/artifacts/model"
 model <- mlflow_load_model(model_URI)
 # print(model)
-
+print(model_URI)
 
 input <- data.frame(
   crim = 0.1,
