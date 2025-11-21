@@ -3,7 +3,7 @@
 
 # End-to-End MLOps Pipeline in Cloud Native Enviornment: R, Kubernetes, and Seldon Core
 
-## 📋Overview
+## Overview
 
 This project implements a cloud-native MLOps pipeline for training and serving R models within a Kubernetes environment. Unlike standard Python-based pipelines, this architecture solves the specific challenges of "Polyglot MLOps" (integrating R with Python-native tools) and distributed orchestration.
 
@@ -22,7 +22,7 @@ The system allows for full decoupling of compute, storage, and serving layers:
 
 -----
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
   * **Language:** R (primary), Python (for MLflow/Boto3 backend bindings)
   * **Orchestration:** Kubernetes (Minikube)
@@ -115,7 +115,7 @@ kubectl apply -f serving/6-seldon-deploy.yaml
 
 -----
 
-## 🧪 Testing the API
+##  Testing the API
 
 We use the Seldon Ambassador port (8000) to access the model. This ensures we get metrics and logging, rather than hitting the raw container directly.
 
@@ -141,7 +141,7 @@ curl -X POST http://localhost:8000/api/v1.0/predictions \
 
 -----
 
-## 🔧 Troubleshooting & Lessons Learned
+##  Troubleshooting & Lessons Learned
 
 ### 1\. The "Polyglot Tax"
 
@@ -165,6 +165,3 @@ curl -X POST http://localhost:8000/api/v1.0/predictions \
 
 -----
 
-##  License
-
-[Your License Here]
