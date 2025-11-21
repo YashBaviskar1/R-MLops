@@ -4,3 +4,5 @@ venv/
 .RData
 .env
 .Rhistory
+examples/rf_model/
+examples/rf_model_crate/

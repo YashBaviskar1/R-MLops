@@ -13,7 +13,7 @@ Sys.setenv(
   MLFLOW_S3_ENDPOINT_URL = "http://127.0.0.1:8001"
 )
 
-model_URI <- "s3://mlflow-artifacts/7/79be2b3c0fc443fdb23b06824d576a79/artifacts/model"
+model_URI <- "s3://mlflow-artifacts/9/6ee2a932beb84a3b875694a36af388a1/artifacts/model"
 cat("Loading model from:", model_URI, "\n")
 model <- mlflow_load_model(model_URI)
 cat("✅ Model loaded successfully\n")

@@ -1,10 +1,10 @@
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
-  name: r-mlflow-model
+  name: r-mlflow-model-regression
   namespace: seldon
 spec:
-  name: rmodel-deploy
+  name: rmodel-deploy-regression
   predictors:
   - name: default
     replicas: 1
@@ -17,7 +17,7 @@ spec:
     - spec:
         containers:
         - name: rmodel
-          image: yashbaviskar/iris-rmodel:9000
+          image: yashbaviskar/boston-rmodel-api:latest
           imagePullPolicy: Always
           ports:
           - containerPort: 8080
