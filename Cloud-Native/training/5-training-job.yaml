@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: r-training-job
+spec:
+  ttlSecondsAfterFinished: 300 # Cleans up the pod 5 mins after completion
+  backoffLimit: 2 # Retries twice if it fails
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: r-trainer
+        image: yashbaviskar/r-trainer:v4
+        imagePullPolicy: Always
+        
+        # Mount the "Conveyor Belt" volume
+        volumeMounts:
+        - name: shared-data
+          mountPath: "/pipeline-data"
+        
+        env:
+        # Networking: Point to the K8s Services we created earlier
+        - name: MLFLOW_TRACKING_URI
+          value: "http://mlflow-service:5000"
+        - name: MLFLOW_S3_ENDPOINT_URL
+          value: "http://minio-service:9000"
+
+        - name: AWS_S3_PATH_STYLE_ACCESS
+          value: "true"
+        - name: MINIO_ENDPOINT
+          value: "minio-service:9000"        
+        # Credentials: Read from the Secret we created in Step 1
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: mlops-secrets
+              key: access-key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlops-secrets
+              key: secret-key
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+          
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: pipeline-shared-pvc

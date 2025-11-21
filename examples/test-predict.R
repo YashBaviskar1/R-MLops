@@ -23,7 +23,3 @@ print(prediction)
 # --------------------------------
 # RUN SERVER (only if run directly)
 # --------------------------------
-if (sys.nframe() == 0) {
-  pr <- plumber::plumb("test-api.R")
-  pr$run(host = "0.0.0.0", port = 8009)
-}

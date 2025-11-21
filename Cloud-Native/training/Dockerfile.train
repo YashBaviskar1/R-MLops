@@ -1,0 +1,28 @@
+FROM rocker/r-ver:4.2.3
+
+# Install system dependencies for MLflow and curl
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages efficiently
+# 'install2.r' is a script included in rocker images that fails on error (good for builds)
+RUN pip3 install mlflow boto3
+RUN install2.r --error \
+    mlflow \
+    rpart \
+    carrier \
+    aws.s3
+ENV MLFLOW_PYTHON_BIN=/usr/bin/python3
+ENV MLFLOW_BIN=/usr/local/bin/mlflow
+# Copy our script
+WORKDIR /app
+COPY train.R /app/train.R
+
+# Default command
+CMD ["Rscript", "train.R"]

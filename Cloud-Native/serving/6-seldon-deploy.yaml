@@ -1,0 +1,57 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: r-mlflow-model
+  namespace: default
+spec:
+  name: rmodel-deploy
+  predictors:
+  - name: default
+    replicas: 1
+    graph:
+      name: rmodel
+      type: MODEL
+      endpoint:
+        type: REST
+    componentSpecs:
+    - spec:
+        containers:
+        - name: rmodel
+          # This is the image that contains your Plumber/API code
+          image: yashbaviskar/iris-rmodel:v1 
+          imagePullPolicy: Always
+          
+          ports:
+          - containerPort: 9000
+            name: http
+            
+          env:
+          # --- NETWORKING (Internal DNS) ---
+          - name: MLFLOW_TRACKING_URI
+            value: "http://mlflow-service:5000"
+          - name: MLFLOW_S3_ENDPOINT_URL
+            value: "http://minio-service:9000"
+            
+          # --- STORAGE COMPATIBILITY (The Fixes) ---
+          - name: AWS_S3_ENDPOINT
+            value: "minio-service:9000"
+          - name: AWS_S3_PATH_STYLE_ACCESS
+            value: "true"
+          - name: AWS_DEFAULT_REGION
+            value: "us-east-1"
+            
+          # --- SECURITY (Secrets) ---
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: mlops-secrets
+                key: access-key
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: mlops-secrets
+                key: secret-key
+                
+          # --- THE ARTIFACT (Paste the URI from your Job logs here) ---
+          - name: MODEL_URI
+            value: "s3://mlflow-artifacts/1/abf8f6a975524a409b57ee6c11d70051/artifacts/model"

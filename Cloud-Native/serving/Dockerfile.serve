@@ -1,0 +1,31 @@
+FROM rocker/r-ver:4.3.3
+
+# 1. Install System Dependencies (C libraries + Python)
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    python3-dev \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 2. Install R Packages
+# Added 'carrier' because that's what we used to save the model
+RUN install2.r --error plumber mlflow jsonlite rpart reticulate carrier R6 aws.s3
+
+# 3. Install Python Packages (The Backend)
+RUN pip3 install mlflow boto3
+
+# 4. Copy Application
+COPY serve.R .
+
+# 5. Environment Config
+ENV MLFLOW_PYTHON_BIN=/usr/bin/python3
+ENV MLFLOW_BIN=/usr/local/bin/mlflow
+
+# 6. Run Plumber
+# WE USE PORT 8000 here. This must match the containerPort in your Seldon YAML.
+EXPOSE 9000
+CMD ["R", "-e", "pr <- plumber::plumb(file='serve.R'); pr$run(host='0.0.0.0', port=9000)"]

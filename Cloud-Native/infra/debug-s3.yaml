@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: debug-s3
+spec:
+  template:
+    spec:
+      containers:
+      - name: debugger
+        image: yashbaviskar/r-trainer:v1 # Your image
+        command: ["Rscript", "-e"]
+        args:
+          - |
+            library(aws.s3)
+            print("--- Debugging S3 Connection ---")
+            
+            # Explicitly config connection
+            Sys.setenv("AWS_ACCESS_KEY_ID" = Sys.getenv("AWS_ACCESS_KEY_ID"))
+            Sys.setenv("AWS_SECRET_ACCESS_KEY" = Sys.getenv("AWS_SECRET_ACCESS_KEY"))
+            Sys.setenv("AWS_S3_ENDPOINT" = "minio-service:9000")
+            Sys.setenv("AWS_DEFAULT_REGION" = "")
+            
+            print("Listing Buckets:")
+            print(bucketlist(region="", use_https=FALSE))
+            
+            print("Attempting Write...")
+            tryCatch({
+              put_object(file = charToRaw("Hello MinIO"), object = "debug.txt", bucket = "mlflow-artifacts", region="", use_https=FALSE)
+              print("Write Success!")
+            }, error = function(e) {
+              print(e)
+            })
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: mlops-secrets
+              key: access-key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mlops-secrets
+              key: secret-key
+      restartPolicy: Never

@@ -2,7 +2,13 @@
 ---
 #  End-to-End MLOps Pipeline for R Models
 
-Deploying R models with **MLflow**, **MinIO (S3)**, and **Seldon Core** on Kubernetes
+
+This project implements a complete MLOps pipeline for training, tracking, and serving R machine learning models. It addresses the specific engineering challenges of "Polyglot MLOps"—integrating R-based data science workflows with Python-native MLOps tools (MLflow) and cloud-native orchestration (Kubernetes).
+
+The system supports two modes of operation:
+
+1.  **Cloud-Native Pipeline:** A fully distributed system using Kubernetes Jobs for training, persistent storage for artifacts, and the Sidecar pattern for production serving. [Cloud-Native Kubernetes Pipeline](Cloud-Native/README.md)
+2.  **Local Development:** A standalone Docker-based workflow for rapid testing and debugging on a local machine. (Continue Below)
 
 ---
 
